@@ -7,6 +7,7 @@ Como instalar:
 5. Abrir o browser, escrever localhost:3000
 6. Have fun and drink tea.
 
+Nota: Pode ser necessário instalar, usando o npm, o body-parser.
 Especificação dos Ficheiros: 
 
 index.js --> Código Servidor 
