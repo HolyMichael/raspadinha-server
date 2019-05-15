@@ -6,33 +6,27 @@ const path = require('path');
 const app = express()
 const port = 3000
 
-const bodyParser = require ("body-parser")
-
-app.use(bodyParser.urlencoded({extended:false}))
-
-app.use(express.static('./html'))
- 
-app.get('/', (req, res) => {
-	res.sendFile(path.join(__dirname+'/html/registry.html'), function (err) {
-	    if (err) {
-	      res.send("Enganaste-te pah!")
-	    }
-  	});
-})
+app.use(express.static("public")) // define a pasta "root" onde são procurados ficheiros estáticos ex scripts de javascript
 
 app.listen(port, () => {
 	console.log(`Example app listening on port ${port}!`)
 })
 
-app.post('/Registar_User.html',(req,res)=>{
-	console.log("A criar um user...")
-	var username= req.body.Username
-	console.log("User:"+ username)
-
-
-	res.sendFile(path.join(__dirname+'/html/Registar_User.html'), function (err) {
-		if (err) {
-			res.send("Enganaste-te pah!")
-		}
-	});
+app.get('/',(req,res)=>{
+	res.render("homepage.ejs")
 })
+
+app.get('/register', (req,res)=>{
+	res.render("register.ejs")
+})
+
+app.get('/register/:pk/:user', (req,res) =>{
+	console.log("User:"+req.params.user)
+	console.log("Public Key:"+req.params.pk)
+	res.render("working.ejs")
+	//we save the fantastic key
+})
+
+/*app.get('*', (req, res) => {
+	res.redirect("404 error")
+})*/
