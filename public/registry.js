@@ -40,7 +40,8 @@ function register() {
      })
       // -------------- RECEIVE SERVER PUBLIC KEY
       socket.on("send_server_public_key", (data) => {
-         print("---- CLIENT RECEIVED SERVER PUBLIC KEY " + key_print(data))
+         print("----- client received server public key ----- ")
+         print(data)
          server_publicKey = data
 
          // -------------- GENERATE SIMMETRIC KEY: CLIENT ===> SERVER
@@ -49,46 +50,68 @@ function register() {
                name: "AES-CTR",
                length: 256, //can be  128, 192, or 256
             },
-            false, //whether the key is extractable (i.e. can be used in exportKey)
+            true, //whether the key is extractable (i.e. can be used in exportKey)
             ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
          //key IS THE GENERATED SYMMETRIC KEY
          ).then(function(key){
-               //returns a key object
-               console.log("AES key: " + key);
-               
-               //PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO SERVIDOR PARA A USAR 
-               window.crypto.subtle.importKey(
-                  "jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
-                  data,
-                  {   //these are the algorithm options
-                      name: "RSA-OAEP",
-                      hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-                  },
-                  true, //whether the key is extractable (i.e. can be used in exportKey)
-                  ["encrypt"] //"encrypt" or "wrapKey" for public key import or
-                              //"decrypt" or "unwrapKey" for private key imports
-               //ENCRYPT THE GENERATED AES WITH THE IMPORTED PUBLIC KEY
-              ).then(function(publicKey){
-                  console.log(publicKey);
-                  //É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
-                  let enc = new TextEncoder();
-                  key_to_encrypt = enc.encode(key)
+               //E PRECISO EXPORTAR A CHAVE SIMETRICA PRIMEIRO
+               window.crypto.subtle.exportKey(
+                  "jwk", //can be "jwk" or "raw"
+                  key //extractable must be true
+               //KEYDATA CORRESPONDE A CHAVE SIMETRICA EXPORTADA
+              ).then(function(keydata){
+                  print("----- client exported simmetric key ----- ")
+                  console.log(keydata);
 
-                  window.crypto.subtle.encrypt(
-                     {
-                         name: "RSA-OAEP",
-                         //label: Uint8Array([...]) //optional
+                  //PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO SERVIDOR PARA A USAR 
+                  window.crypto.subtle.importKey(
+                     "jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
+                     data,
+                     {   //these are the algorithm options
+                        name: "RSA-OAEP",
+                        hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
                      },
-                     publicKey, //from generateKey or importKey above
-                     key_to_encrypt //ArrayBuffer of data you want to encrypt
-                 )
-                 .then(function(encrypted){
-                     //returns an ArrayBuffer containing the encrypted data
-                     console.log(new Uint8Array(encrypted));
-                 })
+                     true, //whether the key is extractable (i.e. can be used in exportKey)
+                     ["encrypt"] //"encrypt" or "wrapKey" for public key import or
+                                 //"decrypt" or "unwrapKey" for private key imports
+                  //ENCRYPT THE GENERATED AES WITH THE IMPORTED PUBLIC KEY
+               ).then(function(publicKey){
+                     print("----- client imported server public key ----- ")
+                     console.log(publicKey);
+                     //É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
+
+                     //TODO: fix this fuckin garbage
+                     let enc = new TextEncoder();
+                     let jason = key_print(keydata)
+                     print(jason)
+                     key_to_encrypt = enc.encode(jason)
+                     // key_to_encrypt = from(JSON.stringify(keydata));
+
+                     window.crypto.subtle.encrypt(
+                        {
+                           name: "RSA-OAEP",
+                           //label: Uint8Array([...]) //optional
+                        },
+                        publicKey, //from generateKey or importKey above
+                        key_to_encrypt //ArrayBuffer of data you want to encrypt
+                     //SEND THE ENCRYPTED KEY TO THE SERVER
+                     ).then(function(encrypted){
+                        print(encrypted)
+                        //returns an ArrayBuffer containing the encrypted data
+                        // console.log(new Uint8Array(encrypted));
+                        socket.emit("encrypted_client_aes_key", encrypted)
+                        // socket.emit("teste", "123")
+                  })
+                  .catch(function(err){
+                      console.error(err);
+                  });
 
               })
-
+              .catch(function(err){
+                  console.error(err);
+              });
+ //returns the exported key data
+            })
 
                //ENCRYPT THIS AES KEY WITH THE RECEIVED RSA PUBLIC KEY
                

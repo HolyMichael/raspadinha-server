@@ -13,6 +13,7 @@ var io = require('socket.io')(http);
 
 const port = 3000
 
+var teste = 0
 var client_publicKey
 var server_publicKey
 var server_privateKey
@@ -40,7 +41,6 @@ io.on('connection',function(socket){
 				//returns a keypair object
 				// console.log(key);
 				//  console.log(key.publicKey);
-
 				//----- SEND SERVER PUBLIC KEY TO CLIENT
 				socket.emit("send_server_public_key", key.publicKey)
 				server_publicKey = key.publicKey
@@ -55,26 +55,108 @@ io.on('connection',function(socket){
 					true, //whether the key is extractable (i.e. can be used in exportKey)
 					["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
 				).then(function(key){
-				   //returns a key object
-				  console.log(key);
+					console.log("AES key: " + key);
+					
+					//PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO CLIENTE PARA A USAR 
+					crypto.subtle.importKey(
+					   "jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
+					   data,
+					   {   //these are the algorithm options
+						   name: "RSA-OAEP",
+						   hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+					   },
+					   true, //whether the key is extractable (i.e. can be used in exportKey)
+					   ["encrypt"] //"encrypt" or "wrapKey" for public key import or
+								   //"decrypt" or "unwrapKey" for private key imports
+					//ENCRYPT THE GENERATED AES WITH THE IMPORTED PUBLIC KEY
+				   ).then(function(publicKey){
+					   console.log(publicKey);
+					   //É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
+					   let enc = new util.TextEncoder();
+					   key_to_encrypt = enc.encode(key)
+	 
+					   crypto.subtle.encrypt(
+						  {
+							  name: "RSA-OAEP",
+							  //label: Uint8Array([...]) //optional
+						  },
+						  publicKey, //from generateKey or importKey above
+						  key_to_encrypt //ArrayBuffer of data you want to encrypt
+					   //SEND THE ENCRYPTED KEY TO THE CLIENT
+					   ).then(function(encrypted){
+						  //returns an ArrayBuffer containing the encrypted data
+						//   console.log(new Uint8Array(encrypted));
+						//   socket.emit("encrypted_client_aes_key", encrypted)
+					  })
+	 
 				})
 
+				})
+				//RECEIVES CLIENT CIPHERED AES KEY
+				socket.on("encrypted_client_aes_key", (data) =>{	
+					// console.log(new Uint8Array(data));
+					crypto.subtle.decrypt(
+						{
+							name: "RSA-OAEP",
+							//label: Uint8Array([...]) //optional
+						},
+						key.privateKey, //from generateKey or importKey above
+						data //ArrayBuffer of the data
+					).then(function(decrypted_key){
+						let dec = new util.TextDecoder("utf-8");
+						dec_key = dec.decode(decrypted_key)
+						
+						print("----- decripted key -----")
+						print(decrypted_key.toString())
+						print(decrypted_key)
+						print(dec_key.toString())
+						print(dec_key)
+						
+						crypto.subtle.importKey( "jwk", //can be "jwk" or "raw"
+							decrypted_key, {   //this is the algorithm options
+								name: "AES-CTR",
+							},
+							true, //whether the key is extractable (i.e. can be used in exportKey)
+							["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+						).then(function(client_server_aes_key){
+								//returns the symmetric key
+								console.log(client_server_aes_key);
+						})
+					})
 
-
-
+				// 	// // console.log(new Uint8Array(decrypted));
+				// 	// var k = new util.TextDecoder("utf-8").decode(new Uint8Array(decrypted_key));
+				// 	// print(string)
+				// 	crypto.subtle.importKey(
+				// 		"jwk", //can be "jwk" or "raw"
+				// 		decrypted_key,
+				// 		{   //this is the algorithm options
+				// 			name: "AES-CTR",
+				// 		},
+				// 		true, //whether the key is extractable (i.e. can be used in exportKey)
+				// 		["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+				// 	)
+				// 	.then(function(client_server_aes_key){
+				// 		//returns the symmetric key
+				// 		console.log(client_server_aes_key);
+				// 	})
+				// })
 			})
-			.catch(function(err){
-				console.error(err);
-			});
-
-
-	
+		}).catch(function(err){
+			console.error(err);
+		});
 	})
 	
+	socket.on("teste", (data) =>{
+		teste = data
+		print("ass " + teste)
+	})
+
 	socket.on('disconnect',function(){
 		console.log('user disconnected')
-	}
-)})
+	})
+
+})
 
 
 
