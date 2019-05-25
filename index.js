@@ -14,39 +14,70 @@ var io = require('socket.io')(http);
 const port = 3000
 
 var client_publicKey
+var server_publicKey
+var server_privateKey
 
 app.use(express.static(__dirname + "/public"))  // define a pasta "root" onde são procurados ficheiros estáticos ex scripts de javascript
 
 io.on('connection',function(socket){
 	console.log("User connected")
 
-	socket.on("send_public_key", (data) =>{
-		// data = {
-		// 	"alg": "RSA-OAEP-256",
-		// 	"e": "AQAB",
-		// 	"ext": true,
-		// 	"key_ops": [
-		// 	"encrypt"
-		// 	],
-		// 	"kty": "RSA",
-		// 	"n": "qpQq_P-hJqtqpQPSGduc-xcqcRRzt5tOGrvOO-M5vL5zcWA1NBOCYx9NXhFmLBTMOg1o-36YtmW36QFP-PGP3uM8A53pyZMzl-NAE_CYUE85g1Xj3VamZN8hKX4Lp1_MN8edYXekWllsQxAhdfRrwuNX108r59SVtqoq9wVU9ts"
-		// }
+	socket.on("send_client_public_key", (data) =>{	
+			// ---- RECEIVE CLIENT PUBLIC KEY
+			print("-- SERVER RECEIVED CLIENT PUBLIC KEY")
+			client_publicKey = data
+			print(data)
 
-		json_to_key(data).then(key => {
-			print("something happened");
-			print("Server received: " + key_print(key));
-			
-			// var ct = encrypt("hi", key).then(
-			// print(ct)
-		})
-		
-		
-	});
+			crypto.subtle.generateKey({
+				name: "RSA-OAEP",
+				modulusLength: 1024,
+				publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+				hash: {name: "SHA-256"}, 
+				},
+				true,
+				["encrypt", "decrypt"]
+			).then(function(key){
+				//returns a keypair object
+				// console.log(key);
+				//  console.log(key.publicKey);
 
+				//----- SEND SERVER PUBLIC KEY TO CLIENT
+				socket.emit("send_server_public_key", key.publicKey)
+				server_publicKey = key.publicKey
+				// console.log(key.privateKey);
+
+				// -------------- GENERATE SIMMETRIC KEY: SERVER ===> CLIENT
+				crypto.subtle.generateKey(
+				{
+					name: "AES-CTR",
+					length: 256, //can be  128, 192, or 256
+					},
+					true, //whether the key is extractable (i.e. can be used in exportKey)
+					["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+				).then(function(key){
+				   //returns a key object
+				  console.log(key);
+				})
+
+
+
+
+			})
+			.catch(function(err){
+				console.error(err);
+			});
+
+
+	
+	})
+	
 	socket.on('disconnect',function(){
 		console.log('user disconnected')
 	}
 )})
+
+
+
 
 
 http.listen(port, function(){
@@ -111,9 +142,10 @@ function key_print(key){
   * @param {*} key_data normalmente um json que corresponde aos parametros da chave
   */
  function json_to_key(key_data){
+
 	return crypto.subtle.importKey("jwk", key_data,{ name: "RSA-OAEP", hash: "SHA-256" },
-									true, ["encrypt"] ).then( function (result){
+									true, ["encrypt"] ).then((result) => {
+										// print("~~~~~ key returning: ~~~~~\n " + key_print(result))
 										client_publicKey = result
-										print("~~~~~ key returning: ~~~~~\n " + key_print(result))
 									});
  }
