@@ -3,7 +3,11 @@
 		<div>
 			Registar Utilizador
 			<input  id ="User" placeholder="Username" name="Username">
-			<button type="button" onclick="register();">Register</button>
+			<button type="button" onclick=register()>Register</button>
 	</body>
 	<script src=registry.js></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+		var socket = io('//localhost:3000');
+	</script>
 </html>
