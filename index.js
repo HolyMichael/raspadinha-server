@@ -13,6 +13,7 @@ var io = require('socket.io')(http);
 
 const port = 3000
 
+
 var teste = 0
 var client_publicKey
 var server_publicKey
@@ -92,28 +93,35 @@ io.on('connection',function(socket){
 				})
 
 				})
+
 				//RECEIVES CLIENT CIPHERED AES KEY
-				socket.on("encrypted_client_aes_key", (data) =>{	
-					// console.log(new Uint8Array(data));
+				socket.on("encrypted_client_aes_key", (cipheredKey) =>{	
+					console.log(cipheredKey);
 					crypto.subtle.decrypt(
 						{
 							name: "RSA-OAEP",
 							//label: Uint8Array([...]) //optional
 						},
 						key.privateKey, //from generateKey or importKey above
-						data //ArrayBuffer of the data
-					).then(function(decrypted_key){
-						let dec = new util.TextDecoder("utf-8");
+						cipheredKey //ArrayBuffer of the data
+					).then((decrypted_key) => {
+						print(decrypted_key.byteLength)
+						let dec = new util.TextDecoder();
 						dec_key = dec.decode(decrypted_key)
 						
 						print("----- decripted key -----")
-						print(decrypted_key.toString())
-						print(decrypted_key)
-						print(dec_key.toString())
-						print(dec_key)
-						
+						print(key_print(dec_key))
+
+						let key = {
+							alg:"A256CTR",
+							ext:true,
+							k:'"' + dec_key + '"',
+							key_ops:["encrypt","decrypt"],
+							kty:"oct"
+						}
+								
 						crypto.subtle.importKey( "jwk", //can be "jwk" or "raw"
-							decrypted_key, {   //this is the algorithm options
+						key, {   //this is the algorithm options
 								name: "AES-CTR",
 							},
 							true, //whether the key is extractable (i.e. can be used in exportKey)
@@ -123,24 +131,6 @@ io.on('connection',function(socket){
 								console.log(client_server_aes_key);
 						})
 					})
-
-				// 	// // console.log(new Uint8Array(decrypted));
-				// 	// var k = new util.TextDecoder("utf-8").decode(new Uint8Array(decrypted_key));
-				// 	// print(string)
-				// 	crypto.subtle.importKey(
-				// 		"jwk", //can be "jwk" or "raw"
-				// 		decrypted_key,
-				// 		{   //this is the algorithm options
-				// 			name: "AES-CTR",
-				// 		},
-				// 		true, //whether the key is extractable (i.e. can be used in exportKey)
-				// 		["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
-				// 	)
-				// 	.then(function(client_server_aes_key){
-				// 		//returns the symmetric key
-				// 		console.log(client_server_aes_key);
-				// 	})
-				// })
 			})
 		}).catch(function(err){
 			console.error(err);
@@ -185,27 +175,6 @@ app.get('/register', (req,res)=>{
 	res.redirect("404 error")
 })*/
 
-function encrypt(text, publicKey){
-	text = "ola ;)"
-	let enc = new util.TextEncoder();
-	encoded_text = enc.encode(text);
-	
-	let ct = crypto.subtle.encrypt({name: "RSA-OAEP"}, publicKey, encoded_text );
-	print("ciphertext:" + ct)
-
-	return ct
-}
-
-function decrypt(ct, privateKey){
-	let enc = new util.TextEncoder();
-	let encoded_ct = enc.encode(ct)
-	let dec = crypto.subtle.decrypt({name:"RSA-OAEP"}, privateKey, encoded_ct);
-
-	print("123" + dec)
-
- return dec
-}
-
 function print(stuff){
 	console.log(stuff)
  }
@@ -223,11 +192,10 @@ function key_print(key){
   * retorna o objecto do tipo crypto key
   * @param {*} key_data normalmente um json que corresponde aos parametros da chave
   */
- function json_to_key(key_data){
-
-	return crypto.subtle.importKey("jwk", key_data,{ name: "RSA-OAEP", hash: "SHA-256" },
-									true, ["encrypt"] ).then((result) => {
-										// print("~~~~~ key returning: ~~~~~\n " + key_print(result))
-										client_publicKey = result
-									});
+ function rebuild_key_json(k){
+	var json = '{"alg":"A256CTR","ext":true,"k":"'+ k +'","key_ops":["encrypt","decrypt"],"kty":"oct"}'
+	print("------ rebuilded json: ")
+	print(json)
+	
+	return json
  }

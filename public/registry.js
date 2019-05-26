@@ -33,10 +33,10 @@ function register() {
       //returns a keypair object
       // console.log(key);
       //---------------------------------- send client public key
-      server_publicKey = window.crypto.subtle.exportKey("jwk", key.publicKey).then(function(keydata){
+      server_publicKey = window.crypto.subtle.exportKey("jwk", key.publicKey).then(function(pubkey){
          //returns the exported key data
          //print(keydata + key_print(keydata));
-         socket.emit("send_client_public_key", keydata)
+         socket.emit("send_client_public_key", pubkey)
      })
       // -------------- RECEIVE SERVER PUBLIC KEY
       socket.on("send_server_public_key", (data) => {
@@ -62,7 +62,6 @@ function register() {
               ).then(function(keydata){
                   print("----- client exported simmetric key ----- ")
                   console.log(keydata);
-
                   //PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO SERVIDOR PARA A USAR 
                   window.crypto.subtle.importKey(
                      "jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
@@ -78,13 +77,14 @@ function register() {
                ).then(function(publicKey){
                      print("----- client imported server public key ----- ")
                      console.log(publicKey);
+                     console.log(key_print(keydata))
+   
                      //É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
 
                      //TODO: fix this fuckin garbage
                      let enc = new TextEncoder();
-                     let jason = key_print(keydata)
-                     print(jason)
-                     key_to_encrypt = enc.encode(jason)
+                     key_to_encrypt = enc.encode(keydata.k)
+                     print("about to send:  " + key_to_encrypt)
                      // key_to_encrypt = from(JSON.stringify(keydata));
 
                      window.crypto.subtle.encrypt(
@@ -96,9 +96,17 @@ function register() {
                         key_to_encrypt //ArrayBuffer of data you want to encrypt
                      //SEND THE ENCRYPTED KEY TO THE SERVER
                      ).then(function(encrypted){
+                        print("SEND THE ENCRYPTED KEY TO THE SERVER")
                         print(encrypted)
+                        print(encrypted.byteLength)
                         //returns an ArrayBuffer containing the encrypted data
-                        // console.log(new Uint8Array(encrypted));
+                        // // console.log(new Uint8Array(encrypted));
+                        // socket.emit("first_half", encrypted.slice(0, encrypted.byteLength/2))
+                        // socket.emit("second_half", encrypted.slice( encrypted.byteLength/2, 128))
+
+                        //alternativa, passar diretamente o valor da string da chave
+                        //e fazer rebuild do json na outra parte
+
                         socket.emit("encrypted_client_aes_key", encrypted)
                         // socket.emit("teste", "123")
                   })
@@ -129,33 +137,6 @@ function register() {
 
 };
 
-
-function encrypt(text, publicKey){
-      text = "ola"
-      let enc = new TextEncoder();
-      encoded_data = enc.encode(data);
-      
-      let ct = window.crypto.subtle.encrypt({name: "RSA-OAEP"}, publicKey, encoded_data );
-      print("123" + ct)
-
-      return ct
-}
-
-function decrypt(ct, privateKey){
-   import_key(ct, privateKey).then(function fun(){
-      print("received:" + print(typeof client_secret_key))
-  
-
-   let enc = new TextEncoder();
-   let encoded_ct = enc.encode(ct)
-   let dec = window.crypto.subtle.decrypt({name:"RSA-OAEP"}, privateKey, encoded_ct);
-   print("123" + dec)
-
-   return dec
-   })
-}
-
-
 function print(stuff){
    console.log(stuff)
 }
@@ -166,22 +147,9 @@ function print(stuff){
  * @returns string da chave
  */
 function key_print(key){
-	return JSON.stringify(key, null, " ")
+	return JSON.stringify(key, null, "")
  }
 
-function import_key(ct, key_data){
-   return crypto.subtle.importKey("jwk", key_data,{ name: "RSA-OAEP", hash: "SHA-256" },
-                           true,  ["decrypt"] ).then(exportedKey => {
-                              client_secret_key = exportedKey
-                              print(client_secret_key)
-
-                              let dec = window.crypto.subtle.decrypt({name:"RSA-OAEP"}, client_secret_key, ct);
-                              print("123" + dec)
-
-                              return exportedKey
-                           })
-          
- }
 
 
 
