@@ -1,5 +1,8 @@
 console.log("I'm alive");
 
+var mongoose = require('mongoose');
+
+
 const { Crypto } = require("@peculiar/webcrypto");
 const crypto = new Crypto();
 
@@ -11,22 +14,60 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+
+const mongo = require('mongodb').MongoClient
+const url = 'mongodb://localhost:27017/'
+
+// mongo.connect(url, { useNewUrlParser: true }, (err, client) => {
+// 	if (err) {
+// 	  console.error(err)
+// 	  return
+// 	}
+
+// 	const db = client.db('users')
+// 	const collection = db.collection('users')
+
+// 	var myobj = { name: "luis123", aeskey_servidor_cliente: "bbbbbb" };
+	
+// 	collection.insertOne(myobj, function(err, res) {
+// 		if (err) throw err;
+// 		console.log("1 document inserted");
+// 		console.log(myobj._id)
+// 	  });
+
+// 	collection.find({}, {projection:{ _id:0 , name : 1}}).toArray(function(err, result){
+// 		if (err) throw err;
+//     	console.log(result);
+// 	})
+
+// 	client.close()
+//   })
+
+
+
 const port = 3000
 
 
-var teste = 0
-var client_publicKey
-var server_publicKey
-var server_privateKey
 
 app.use(express.static(__dirname + "/public"))  // define a pasta "root" onde são procurados ficheiros estáticos ex scripts de javascript
 
 io.on('connection',function(socket){
 	console.log("User connected")
 
+	var id =""
+	var client_publicKey
+	var server_publicKey
+	var server_privateKey
+	var aes_client_server
+	var aes_server_client
+
+	//wrapper para esta parte toda, nao ligar a identacao
+	socket.on("get_username", (name) =>{
+
+	
 	socket.on("send_client_public_key", (data) =>{	
 			// ---- RECEIVE CLIENT PUBLIC KEY
-			print("-- SERVER RECEIVED CLIENT PUBLIC KEY")
+			print("-- SERVER RECEIVED CLIENT PUBLIC KEY FROM USER:" + name)
 			client_publicKey = data
 			print(data)
 
@@ -41,6 +82,9 @@ io.on('connection',function(socket){
 			).then(function(key){
 				//returns a keypair object
 				// console.log(key);
+							
+				server_publicKey = key.publicKey
+				server_privateKey = key.privateKey
 				//  console.log(key.publicKey);
 				//----- SEND SERVER PUBLIC KEY TO CLIENT
 				socket.emit("send_server_public_key", key.publicKey)
@@ -57,6 +101,7 @@ io.on('connection',function(socket){
 					["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
 				).then(function(key){
 					console.log("AES key: " + key);
+					aes_server_client = key
 					
 					//PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO CLIENTE PARA A USAR 
 					crypto.subtle.importKey(
@@ -85,6 +130,8 @@ io.on('connection',function(socket){
 						  key_to_encrypt //ArrayBuffer of data you want to encrypt
 					   //SEND THE ENCRYPTED KEY TO THE CLIENT
 					   ).then(function(encrypted){
+
+						//TODO
 						  //returns an ArrayBuffer containing the encrypted data
 						//   console.log(new Uint8Array(encrypted));
 						//   socket.emit("encrypted_client_aes_key", encrypted)
@@ -128,7 +175,32 @@ io.on('connection',function(socket){
 							["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
 						).then(function(client_server_aes_key){
 								//returns the symmetric key
-								console.log(client_server_aes_key);
+								aes_client_server = client_server_aes_key
+								// console.log(client_server_aes_key);
+
+								mongo.connect(url, { useNewUrlParser: true }, (err, client) => {
+									if (err) {
+									  console.error(err)
+									  return
+									}
+							
+									const db = client.db('users')
+									const collection = db.collection('users')
+								
+									var myobj = {name: name, server_privateKey: server_privateKey, 
+													server_publicKey: server_publicKey , client_pubKey: client_publicKey, 
+													aes_server_client: aes_server_client, aes_client_server: aes_client_server};
+										
+									collection.insertOne(myobj, function(err, res) {
+										if (err) throw err;
+										id = myobj._id
+										console.log("1 document inserted " + myobj._id + " " +id);
+									});	  
+										
+									client.close()
+									return
+								  })
+
 						})
 					})
 			})
@@ -136,7 +208,10 @@ io.on('connection',function(socket){
 			console.error(err);
 		});
 	})
-	
+
+
+	})
+
 	socket.on("teste", (data) =>{
 		teste = data
 		print("ass " + teste)

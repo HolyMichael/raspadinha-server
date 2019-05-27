@@ -1,0 +1,25 @@
+no servidor vou meter:
+
+    -username
+    -chave simetrica servidor -> cliente
+    -chave simetrica cliente ->  servidor
+
+    -public key do servido**     - do mesmo par de chaves RSA
+    -private key do servidor**  - do mesmo par de chaves RSA
+    -public key do cliente **
+    
+    ** temporarias, acho que depois de gerar posso apagar
+
+
+no cliente guardar:   (no local storage or something)
+    -chave simetrica servidor -> cliente
+    -chave simetrica cliente ->  servidor
+
+    -public key do cliente**     - do mesmo par de chaves RSA
+    -private key do cliente**  - do mesmo par de chaves RSA
+    -public key do servidor **
+
+
+    ha uma opcao para meter um par de chaves num wrapper
+    ou seja é para encriptar a palavra passe
+    

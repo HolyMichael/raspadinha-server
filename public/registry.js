@@ -1,16 +1,5 @@
 // const fs= require('fs');
 
-function arrayBufferToString(buffer)
-{
-    var str = "";
-    for (var iii = 0; iii < buffer.byteLength; iii++)
-    {
-        str += String.fromCharCode(buffer[iii]);
-    }
-
-    return str;
-}
-
 var client_publicKey
 var server_publicKey
 var client_privateKey
@@ -21,6 +10,14 @@ function register() {
    document.body.appendChild(a);   // faz append do elemento à página
    utilizador= document.getElementById("User").value
 
+   socket.on("key_transmission_error", (data)=>{
+      alert("error communicating to server, reloading")
+      location.reload();
+   })
+
+   socket.emit("get_username", utilizador)
+
+   
    window.crypto.subtle.generateKey({
       name: "RSA-OAEP",
       modulusLength: 1024,
