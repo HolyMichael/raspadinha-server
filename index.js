@@ -1,7 +1,4 @@
-console.log("I'm alive");
-
-var mongoose = require('mongoose');
-
+console.log("Server alive");
 
 const { Crypto } = require("@peculiar/webcrypto");
 const crypto = new Crypto();
@@ -17,6 +14,8 @@ var io = require('socket.io')(http);
 
 const mongo = require('mongodb').MongoClient
 const url = 'mongodb://localhost:27017/'
+const port = 3000
+
 
 // mongo.connect(url, { useNewUrlParser: true }, (err, client) => {
 // 	if (err) {
@@ -43,12 +42,6 @@ const url = 'mongodb://localhost:27017/'
 // 	client.close()
 //   })
 
-
-
-const port = 3000
-
-
-
 app.use(express.static(__dirname + "/public"))  // define a pasta "root" onde são procurados ficheiros estáticos ex scripts de javascript
 
 io.on('connection', function (socket) {
@@ -61,10 +54,37 @@ io.on('connection', function (socket) {
 	var aes_client_server
 	var aes_server_client
 
-	//wrapper para esta parte toda, nao ligar a identacao
+
+	socket.on("validate_username", (username) => {
+
+		mongo.connect(url, { useNewUrlParser: true }, (err, client) => {
+			if (err) {
+				console.error(err)
+				return
+			}
+			const db = client.db('users')
+			const collection = db.collection('users')
+
+			var query = { name: username };
+
+			collection.find(query).toArray(function (err, result) {
+				if (err) throw err;
+
+				if (result.length == 0) {
+					print("new user")
+					socket.emit("existing_check", 0)
+				}
+				if (result.length != 0) {
+					print("existing username")
+					socket.emit("existing_check", 1)
+				}
+			})
+		})
+
+	})
+
 	socket.on("get_username", (name) => {
-
-
+		//resto do processo de registo
 		socket.on("send_client_public_key", (data) => {
 			// ---- RECEIVE CLIENT PUBLIC KEY
 			print("-- SERVER RECEIVED CLIENT PUBLIC KEY FROM USER:" + name)
@@ -102,51 +122,46 @@ io.on('connection', function (socket) {
 				).then(function (aes_key) {
 					//E PRECISO EXPORTAR A CHAVE SIMETRICA PRIMEIRO
 					crypto.subtle.exportKey(
-					   "jwk", //can be "jwk" or "raw"
-					   aes_key //extractable must be true
-					   //KEYDATA CORRESPONDE A CHAVE SIMETRICA EXPORTADA
+						"jwk", //can be "jwk" or "raw"
+						aes_key //extractable must be true
+						//KEYDATA CORRESPONDE A CHAVE SIMETRICA EXPORTADA
 					).then(function (exported_aes) {
-					console.log("AES key: " + exported_aes);
-					aes_server_client = aes_key
+						console.log("AES key: " + exported_aes);
+						aes_server_client = aes_key
 
-					//PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO CLIENTE PARA A USAR 
-					crypto.subtle.importKey(
-						"jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
-						data,
-						{   //these are the algorithm options
-							name: "RSA-OAEP",
-							hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-						},
-						true, //whether the key is extractable (i.e. can be used in exportKey)
-						["encrypt"] //"encrypt" or "wrapKey" for public key import or
-						//"decrypt" or "unwrapKey" for private key imports
-						//ENCRYPT THE GENERATED AES WITH THE IMPORTED PUBLIC KEY
-					).then(function (publicKey) {
-						console.log(publicKey);
-						//É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
-						let enc = new util.TextEncoder();
-						key_to_encrypt = enc.encode(exported_aes.k)
-
-						crypto.subtle.encrypt(
-							{
+						//PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO CLIENTE PARA A USAR 
+						crypto.subtle.importKey(
+							"jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
+							data,
+							{   //these are the algorithm options
 								name: "RSA-OAEP",
-								//label: Uint8Array([...]) //optional
+								hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
 							},
-							publicKey, //from generateKey or importKey above
-							key_to_encrypt //ArrayBuffer of data you want to encrypt
-							//SEND THE ENCRYPTED KEY TO THE CLIENT
-						).then(function (encrypted) {
-							print("------- about to send:")
-							socket.emit("encrypted_server_aes_key", encrypted)
+							true, //whether the key is extractable (i.e. can be used in exportKey)
+							["encrypt"] //"encrypt" or "wrapKey" for public key import or
+							//"decrypt" or "unwrapKey" for private key imports
+							//ENCRYPT THE GENERATED AES WITH THE IMPORTED PUBLIC KEY
+						).then(function (publicKey) {
+							console.log(publicKey);
+							//É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
+							let enc = new util.TextEncoder();
+							key_to_encrypt = enc.encode(exported_aes.k)
 
-							//TODO
-							//returns an ArrayBuffer containing the encrypted data
-							//   console.log(new Uint8Array(encrypted));
-							//   socket.emit("encrypted_client_aes_key", encrypted)
+							crypto.subtle.encrypt(
+								{
+									name: "RSA-OAEP",
+									//label: Uint8Array([...]) //optional
+								},
+								publicKey, //from generateKey or importKey above
+								key_to_encrypt //ArrayBuffer of data you want to encrypt
+								//SEND THE ENCRYPTED KEY TO THE CLIENT
+							).then(function (encrypted) {
+								print("------- about to send:")
+								socket.emit("encrypted_server_aes_key", encrypted)
+							})
+
 						})
-
 					})
-				})
 				})
 
 				//RECEIVES CLIENT CIPHERED AES KEY
@@ -217,9 +232,37 @@ io.on('connection', function (socket) {
 			}).catch(function (err) {
 				console.error(err);
 			});
+		});
+	});
+
+
+	socket.on("login", (username) => {
+		console.log(username)
+
+		mongo.connect(url, { useNewUrlParser: true }, (err, client) => {
+			if (err) {
+				console.error(err)
+				return
+			}
+			const db = client.db('users')
+			const collection = db.collection('users')
+
+			var query = { name: username };
+
+			collection.find(query).toArray(function (err, result) {
+				if (err) throw err;
+
+				if (result.length == 0) {
+					print("a")
+				}
+
+				if (result.length != 0) {
+					print("B")
+				}
+				// console.log(result);
+				client.close();
+			});
 		})
-
-
 	})
 
 	socket.on("teste", (data) => {
@@ -230,9 +273,7 @@ io.on('connection', function (socket) {
 	socket.on('disconnect', function () {
 		console.log('user disconnected')
 	})
-
 })
-
 
 
 
@@ -249,6 +290,9 @@ app.get('/register', (req, res) => {
 	res.render("register.ejs")
 })
 
+app.get('/login', (req, res) => {
+	res.render("login.ejs")
+})
 // app.get('/register/:pk/:user', (req,res) =>{
 // 	console.log("User:"+req.params.user)
 // 	console.log("Public Key:"+req.params.pk)
@@ -273,14 +317,3 @@ function key_print(key) {
 	return JSON.stringify(key, null, " ")
 }
 
-/**
- * retorna o objecto do tipo crypto key
- * @param {*} key_data normalmente um json que corresponde aos parametros da chave
- */
-function rebuild_key_json(k) {
-	var json = '{"alg":"A256CTR","ext":true,"k":"' + k + '","key_ops":["encrypt","decrypt"],"kty":"oct"}'
-	print("------ rebuilded json: ")
-	print(json)
-
-	return json
-}

@@ -3,10 +3,27 @@
 var client_publicKey
 var server_publicKey
 
-function register() {
+function validate_username(){
    a = document.createElement("p") // Cria um novo elemento do tipo p
    a.innerHTML = "Clicked!"// diz o html a ser colocado dentro desse elento
    document.body.appendChild(a);   // faz append do elemento à página
+   utilizador = document.getElementById("User").value
+
+   socket.emit("validate_username", utilizador)
+
+   socket.on("existing_check", function (data) {
+      if(data == 1){
+         alert("ERROR: Username already exists. Please enter a new one")
+         location.reload()
+      }
+      if(data == 0){
+         register()
+      }
+   })
+
+}
+
+function register() {
    utilizador = document.getElementById("User").value
 
    socket.emit("get_username", utilizador)
@@ -151,6 +168,7 @@ function register() {
             console.error(err);
          });
       })
+
    })
 };
 
