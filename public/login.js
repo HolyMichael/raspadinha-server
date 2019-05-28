@@ -6,10 +6,6 @@ function validate_username() {
     document.body.appendChild(a);   // faz append do elemento à página
     utilizador = document.getElementById("Username").value
 
-    var blob = new Blob(["Hello, world!"], { type: "text/plain;charset=utf-8" });
-    FileSaver.saveAs(blob, "hello world.txt");
-
-
     socket.emit("validate_username", utilizador)
 
     socket.on("existing_check", function (data) {

@@ -16,72 +16,10 @@ const mongo = require('mongodb').MongoClient
 const url = 'mongodb://localhost:27017/'
 const port = 3000
 
-const server_inital_PK = {
-	kty: "RSA",
-	alg: "RSA-OAEP-256",
-	key_ops: [
-		"encrypt"
-	],
-	ext: true,
-	n: "vDlw-L9xRWlK7jAYjRHJCOKt7OlO0tDQcceUiLfdQPTS41RWEuOiw46N-kVUfnCBsTJ0r4LnIho9nXUlhLIgJiQpzVYA6-2uASY9c7LhVLWoVs1jEj6f1kpFj3ekJNtQSCMV2mMrIyoBmiHtoPDdIwRbPwB1BDJt3ztajys5IM7kFRS9KWJxB7gOdFQESv-Qt_L5eap41I9_phCximuRCeOxG73qfYY_osbWuWCMBzWBd25xQKEy5AtYnldTkRrudu9cX4Y8cbPgHTD5WNc1p7yJhX0QzFxyUogBrQNnCCJv-8y7-SiV3pxZSXbxLQFcLegYnlTCmjRozbm-0rUeBw",
-	e: "AQAB"
-}
-const server_inital_SK = {
-	kty: "RSA",
-	alg: "RSA-OAEP-256",
-	key_ops: [
-		"decrypt"
-	],
-	ext: true,
-	n: "vDlw-L9xRWlK7jAYjRHJCOKt7OlO0tDQcceUiLfdQPTS41RWEuOiw46N-kVUfnCBsTJ0r4LnIho9nXUlhLIgJiQpzVYA6-2uASY9c7LhVLWoVs1jEj6f1kpFj3ekJNtQSCMV2mMrIyoBmiHtoPDdIwRbPwB1BDJt3ztajys5IM7kFRS9KWJxB7gOdFQESv-Qt_L5eap41I9_phCximuRCeOxG73qfYY_osbWuWCMBzWBd25xQKEy5AtYnldTkRrudu9cX4Y8cbPgHTD5WNc1p7yJhX0QzFxyUogBrQNnCCJv-8y7-SiV3pxZSXbxLQFcLegYnlTCmjRozbm-0rUeBw",
-	e: "AQAB",
-	d: "Mj5LD7taqyKeI9Km2xFCTqLjtnfY2KFw4s5Zsd0SrIItwQ0EJOqqyfTFpWbYVSAHHpvPVgJlXE8Q33Uj3LYHqubAWdV5TYEWj6v7f2TijVAobXNJ3Nbmp7cPtmpDYKtCVN84uCD8pNhTsScZXXquLOi-yqR-l-42Mf6P_-OTzlO2SIp52hHvNTalykM3F8GmKxl8nEDPnupwAPYRaKA5N8SijztXFzo4DB-Ib2GXQ85rj3Ob7pp3163Gt47s_83Mbf_bFyiFN5ZXrNGyUsxbiULQopZ54JrBhMrsiiG-MK0NSefp9XSd_885wBY2xyHDJTIke8u413vkW9b3ixReIQ",
-	p: "61q9D_Af8lxmYChmK8GLXqkcUTfiQe86g5GMpzP2Igr_YKWu84OKRC6fen1mL50FOBBX0IUj1yx1PBa6WyZ1WZsVeD_OKy3JFwu_tj3QEzBiqYZA07okeV3zcqgl10Ngn7x3WL9UOIeqCXeUHNjkc_qlTf-uWa9UNiR2X4t_vyk",
-	q: "zLxSUKTC3wd7yBjQWp2FM2wtNFzc2YIdigjlSjBFO5pGANs8juximoQNTejFYMFSVW7xs6LIRpWGY6EjrdVI44-qHHLI8vjh7aKWaiuGS64TV7VgwdctbzsMl9edQcPy3aNDa2aSFRochYGE1wBfInUI4F27gIw3CTGKgB2BCa8",
-	dp: "0edhi19r_qnuHICrbwb1F_3XZZBj2M5V75XWTiGHuaD5Vuct-70ridfTIFnK01hFmVTqHO1Bo9zgyjCzECxiqQIpyc-OPvBc0pMF7rF-bD7RH8S--JahhSUHxRC2fyB2gsCB6MLriGdmfX8KuBew2MeIuuH4S8CVaJxofppZ2tE",
-	dq: "ZJHpmYWl2Crz6hIOX0TbhqwP9JXdQtdArWq7P1tA1wtsccVAFTEXKrHNW0UJmAK-8AqknkpLOSkAL_aa8SxBNs9-j6TvAzOwv6vLWXHx8UEcbUxCsFWEEwydngUjUYfwyGEHoD1tawI9mnNKDtc25FU7PAOvNHEsI877Kv3TQi8",
-	qi: "L9QWAma3OJSydIfgYTSyCb9EuRfWkpGyoabP_LvAU1sao1Xm-thx-axI-kzosNFG_hHCODeMLhmzWun8r-EjKaSytD29J4sHLuU2sDEMntkDyVRwsFjp0cD16H1H3Gax1PU_cmNfKaimyvElhDRES_VP4nc9Zjifjzm0hLHT0Sc",
-}
-
-
 app.use(express.static(__dirname + "/public"))  // define a pasta "root" onde são procurados ficheiros estáticos ex scripts de javascript
 
 io.on('connection', function (socket) {
 	console.log("User connected")
-
-	socket.on("enter_page", (data) => {
-		crypto.subtle.importKey(
-			"jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
-			server_inital_SK,
-			{   //these are the algorithm options
-				name: "RSA-OAEP",
-				hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-			},
-			true, //whether the key is extractable (i.e. can be used in exportKey)
-			["decrypt"] //"encrypt" or "wrapKey" for public key import or
-			//"decrypt" or "unwrapKey" for private key imports
-		).then(function (private_key) {
-			// console.log(private_key);
-
-			crypto.subtle.importKey(
-				"jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
-				server_inital_PK,
-				{   //these are the algorithm options
-					name: "RSA-OAEP",
-					hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-				},
-				true, //whether the key is extractable (i.e. can be used in exportKey)
-				["encrypt"] //"encrypt" or "wrapKey" for public key import or
-				//"decrypt" or "unwrapKey" for private key imports
-			).then(function (public_Key) {
-				console.log("entered");
-				// print(key_print(public_Key))
-
-				socket.emit("init_server_public_key", public_Key)
-			})
-
-		})
-	})
 
 	var id = ""
 	var client_publicKey
@@ -89,41 +27,6 @@ io.on('connection', function (socket) {
 	var server_privateKey
 	var aes_client_server
 	var aes_server_client
-
-	socket.on("first_register_connection", (cipheredKey) => {
-		print(cipheredKey)
-
-		crypto.subtle.importKey(
-			"jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
-			server_inital_SK,
-			{   //these are the algorithm options
-				name: "RSA-OAEP",
-				hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-			},
-			true, //whether the key is extractable (i.e. can be used in exportKey)
-			["decrypt"] //"encrypt" or "wrapKey" for public key import or
-			//"decrypt" or "unwrapKey" for private key imports
-		).then(function (privateKey) {
-			// print(privateKey)
-			crypto.subtle.decrypt(
-				{
-					name: "RSA-OAEP",
-					//label: Uint8Array([...]) //optional
-				},
-				privateKey, //from generateKey or importKey above
-				cipheredKey //ArrayBuffer of the data
-			)
-				.then(function (decrypted) {
-					//returns an ArrayBuffer containing the decrypted data
-					let dec = new util.TextDecoder();
-					dec_key = dec.decode(decrypted)
-					print(dec_key)
-				})
-		})
-
-	})
-
-
 
 	socket.on("validate_username", (username) => {
 
