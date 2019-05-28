@@ -23,3 +23,47 @@ no cliente guardar:   (no local storage or something)
     ha uma opcao para meter um par de chaves num wrapper
     ou seja é para encriptar a palavra passe
     
+
+
+-----------------------------------
+
+por o servidor a gerar uma chave rsa logo na homepage
+
+depois o cliente gera uma chave simetrica 
+
+cliente cifra a chave simetrica com a publica do servidor
+
+envia a chave cifrada para o servidor
+
+-------------------------------
+
+{
+ "kty": "RSA",
+ "alg": "RSA-OAEP-256",
+ "key_ops": [
+  "decrypt"
+ ],
+ "ext": true,
+ "n": "xjQMoydCZA5lJn79FHnmQ7MVd8dNQl-qgvRXM-_-1OFdYL5HVT8vFxneOCPP-jorm0YLmMJqbBFjNJ8D3avFY47dkWhSIo0mdpDgcuq0wVZYAmqnTjRsR82pJkKC8OkygClXJolXGc1EKDwRwQEI-1ShMW_ZqeBiNpy0y56oCBi1h54xt5DFbXV96nXwhbmF6nbtGlzRRSsvxcx_wCRyVJ3IlQuiwc6YKHh1ArFnynDy7EAaKgdbIlNYuxbCj_KTCq-yu_Qfn3c1khnCHKAcGxdW-852PuSAom21v4NrGXxCLwsDTHhsrbybKbv9D2YyZEeg1Lh6SDf-2Bz223X1YQ",
+ "e": "AQAB",
+ "d": "N9cyOEU3Tzk_BjmA0-QEG864naZo_eo1_-8XImrbQN69kCQLtNi4S6neEbMFRVpeLsDtQ3yCvy-m44xpamqakhIOGolpmpJp472tfrLhehb5dLTXrhDW8OPgZAcZHQaWU8VR6GmJQJu0OCG0XswL28NcJrF8gX_WK8y6oyNv89eDIYzBqdDk2H4XXnfB8zkDj3gBkTIbmzA7H0Tbt3l4SxsJ3itsS2lzh8YpNTTtfJ_04XUa0b298IVMyki-LpS7CQJ05K92QRj9y-6gPmx4OztXrEiSB7WlAPfHVnw21dt9TN0xw1hAoftDJU4seGxHB28d9fidoR1VpDTeiU8ggQ",
+ "p": "76-kXjjlNL9GK_FpinMB__HgteCVi4rbktjEYjCPwV52wuGy-JQrvLoqXSjW5QTVMCAu9M9hM6Trfagn0jdlNBJzhxBP6wixhRr9bPJKZ9GJwzyWf_ZvoYtqgSPmmm66VKUX0E1PQoVOPV7dGxdDiviLO1eve3FNQKWRd-B8Koc",
+ "q": "07GZgRokfCQpVSBTYXvv_2uPUwyxzGud1YBU8Mz1MZBIc2Hb2OQg4BKNTZmL8XJ0eZJAOhyjRllsVGyzXn9VVa8QRqK1IpzFtGPcRlfbYTalt5Qtx-pKi88ukgZ9ISpIGHWeCGWCu1G_7mwgvmJGJ9AklcdCZr8HRCppvR65Utc",
+ "dp": "xlKL65aiOMHnuyZ20KMWzYODDpr0wlC0HE6WODS8TiDunZQI9VwM0I0tzoWjQj58c-S9Vb1eTVAxtnhz8qH5cFuwEdqydeRslpldhk74t-yOU-iHEvyDI6TrDE37Wl8yeCVejfHaGk2ZDni29NqL_apn8kM8pSR76njU497wfnM",
+ "dq": "Ox1kLV4chCIg_KmLPzS530ys-FcaK2h96cntblT9v3p4EOhp2RZTa98iYGIZZzI7_lrt3oxyt8lu6-By8leCf-vkEqWLCYBX4TjloSsVkv8MpcgWRLZTXNldOt_e_2zsNxBZMiUOrbp1a2H8fs24o5OHM-Ax1blQkSN65Zn3zH8",
+ "qi": "MizGABqvbMCbQlcHl0qmEYx67Tvw5fqDMnQvkn5_VgPrygJNxj-fTeUoH8NkaE0dOycZeNsjZzHCHzUqBCzYS2pOl4YmL0T8kVFBsFYcwIYuHg_cukHEHINqWseGxG20PyUusGyegKJejL2ecCvezTp2vbxtnRGxe8kDgCoJ8SQ"
+}
+
+
+
+{
+ "kty": "RSA",
+ "alg": "RSA-OAEP-256",
+ "key_ops": [
+  "encrypt"
+ ],
+ "ext": true,
+ "n": "qdW9oHrPZiTK9202PUSWGmeY0_lbMwFF_iXL2jcm0kHm_anRnLvbMG4MdikjDnuRgw0hYyMGog3vRKZlyuRn-PBBnmoBxTl8c4iC1n8Ii_DnFzWESma79mzyVYZ4xKRSAWgYqKb1wQZwXVFxsMwR2gfRtlmRla6CFxOWbEEcWSTv0d8rvOxWtP1gV_SMgtFzOm7I3CGYjvotMvCqWkietAa-4JQ3jNwAglwrpR9XLLk36hBtfYMHAWOjCdWKeNdwPg2Zsn0RPwomJMjuR7wdO7hA5wS-xl8UsY5fsimAMAHd7GJW2-OHSSE1dM5-__HR0fsHlla1DA0TtWEPw2cQmQ",
+ "e": "AQAB"
+}
+

@@ -8,9 +8,18 @@
 			Register?
 			<button onclick='window.location.href = window.location + "register"'>Click here</button>
 		</div>
-		<script src="/socket.io/socket.io.js"></script>
-		<script>
-			var socket= io();
-		</script>
 	</body>
+	<script src=menu.js></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+		var socket = io('//localhost:3000'); 
+		socket.emit('enter_page', "123ddd");
+		
+		socket.on("init_server_public_key", (pubkey) => {
+			print(pubkey)
+			localStorage.setItem("server_pubkey", JSON.stringify(pubkey, null, " "))
+			print("HI")
+		})
+
+	</script>
 </html>

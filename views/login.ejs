@@ -3,9 +3,8 @@
 		<div>
 			Login do Utilizador
 			<input  id ="Username" placeholder="Username" name="Username">
-			<button type="button" onclick=login()>Login</button>
+			<button type="button" onclick=validate_username()>Login</button>
 	</body>
-	<script src=login.js></script>
 	<script src="/socket.io/socket.io.js"></script>
 	<script>
 		var socket = io('//localhost:3000');

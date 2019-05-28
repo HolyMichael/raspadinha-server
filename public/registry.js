@@ -3,20 +3,110 @@
 var client_publicKey
 var server_publicKey
 
-function validate_username(){
+function validate_username() {
    a = document.createElement("p") // Cria um novo elemento do tipo p
    a.innerHTML = "Clicked!"// diz o html a ser colocado dentro desse elento
    document.body.appendChild(a);   // faz append do elemento à página
    utilizador = document.getElementById("User").value
 
-   socket.emit("validate_username", utilizador)
+   window.crypto.subtle.generateKey(
+      {
+          name: "RSA-OAEP",
+          modulusLength: 2048, //can be 1024, 2048, or 4096
+          publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+          hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+      },
+      true, //whether the key is extractable (i.e. can be used in exportKey)
+      ["encrypt", "decrypt"] //must be ["encrypt", "decrypt"] or ["wrapKey", "unwrapKey"]
+  )
+  .then(function(key){
+      //returns a keypair object
+      console.log(key_print(key.publicKey));
+      console.log(key_print(key.privateKey));
+  })
+
+
+
+   window.crypto.subtle.generateKey(
+      {
+         name: "AES-CTR",
+         length: 256, //can be  128, 192, or 256
+      },
+      true, //whether the key is extractable (i.e. can be used in exportKey)
+      ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+      //key IS THE GENERATED SYMMETRIC KEY
+   ).then(function (key) {
+      //E PRECISO EXPORTAR A CHAVE SIMETRICA PRIMEIRO
+      window.crypto.subtle.exportKey(
+         "jwk", //can be "jwk" or "raw"
+         key //extractable must be true
+         //KEYDATA CORRESPONDE A CHAVE SIMETRICA EXPORTADA
+      ).then(function (keydata) {
+         localStorage.setItem('registry_aes_key', key_print(keydata.k));
+         print("----- client exported simmetric key ----- ")
+         console.log(keydata);
+
+         server_pubkey = localStorage.getItem("server_pubkey")
+         parsed_key = JSON.parse(server_pubkey);
+         console.log(parsed_key.n);
+
+         // print("----- client imported server public key ----- ")
+         // console.log(server_pubkey)
+         // console.log(keydata.k)
+
+         window.crypto.subtle.importKey(
+            "jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
+            {   //this is an example jwk key, other key types are Uint8Array objects
+               kty: "RSA",
+               e: "AQAB",
+               n: parsed_key.n,
+               alg: "RSA-OAEP-256",
+               ext: true,
+            },
+            {   //these are the algorithm options
+               name: "RSA-OAEP",
+               hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+            },
+            true, //whether the key is extractable (i.e. can be used in exportKey)
+            ["encrypt"] //"encrypt" or "wrapKey" for public key import or
+            //"decrypt" or "unwrapKey" for private key imports
+         )
+            .then(function (publicKey) {
+               //returns a publicKey (or privateKey if you are importing a private key)
+               console.log(publicKey);
+               let enc = new TextEncoder();
+               key_to_encrypt = enc.encode(keydata.k)
+
+               window.crypto.subtle.encrypt(
+                  {
+                     name: "RSA-OAEP",
+                     //label: Uint8Array([...]) //optional
+                  },
+                  publicKey, //from generateKey or importKey above
+                  key_to_encrypt //ArrayBuffer of data you want to encrypt
+               ).then(function (encrypted) {
+                     print(new Uint8Array(encrypted))
+                     socket.emit("first_register_connection", encrypted)
+                  })
+
+            }).catch(function (err) {
+               console.error(err);
+            });
+
+
+      })
+
+   })
+
+
+   // socket.emit("validate_username", utilizador)
 
    socket.on("existing_check", function (data) {
-      if(data == 1){
+      if (data == 1) {
          alert("ERROR: Username already exists. Please enter a new one")
          location.reload()
       }
-      if(data == 0){
+      if (data == 0) {
          register()
       }
    })
@@ -25,6 +115,11 @@ function validate_username(){
 
 function register() {
    utilizador = document.getElementById("User").value
+
+   socket.on("init_server_public_key", (pubkey) => {
+      print(pubkey)
+      print("HI")
+   })
 
    socket.emit("get_username", utilizador)
 
@@ -71,7 +166,7 @@ function register() {
                key //extractable must be true
                //KEYDATA CORRESPONDE A CHAVE SIMETRICA EXPORTADA
             ).then(function (keydata) {
-               localStorage.setItem('client_server_aes_key', key);
+               localStorage.setItem('client_server_aes_key', keydata);
                print("----- client exported simmetric key ----- ")
                console.log(keydata);
                //PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO SERVIDOR PARA A USAR 
@@ -160,9 +255,21 @@ function register() {
                ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
             )
                .then((imported_aes_key) => {
-                  print("cheguei chegando")
-                  print(imported_aes_key)
-                  localStorage.setItem('server_client_aes_key', imported_aes_key);
+
+                  window.crypto.subtle.exportKey(
+                     "jwk", //can be "jwk" or "raw"
+                     imported_aes_key //extractable must be true
+                  ).then(function (exported_received_key) {
+                     //returns the exported key data
+                     print("cheguei chegando")
+                     console.log(exported_received_key);
+
+                     // let dec = new TextEncoder();
+                     // enc_temp_key = dec.encode(imported_aes_key)
+
+                     localStorage.setItem('server_client_aes_key', exported_received_key);
+                  })
+                  // print(imported_aes_key)
                })
          }).catch(function (err) {
             console.error(err);
