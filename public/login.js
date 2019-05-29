@@ -33,6 +33,7 @@ function login() {
         client_sk = localStorage.getItem("rsa_sk")
 
         jason_fake = JSON.parse(localStorage.getItem("ignore"))
+        jason_fake.d = client_sk
         jason_fake.alg = "PS256"
         jason_fake.key_ops = "sign"
 
@@ -59,13 +60,11 @@ function login() {
                     //label: Uint8Array([...]) //optional
                 },
                 key, //from generateKey or importKey above
-                new Uint8Array(data) //ArrayBuffer
-            ).then(function (encrypted) {
+                data_to_encrypt //ArrayBuffer
+            ).then(function (signature) {
                 //returns an ArrayBuffer containing the encrypted data
-
-                // socket.emit("reply_to_challenge", encrypted)
-                    print(data + "zzz" + encrypted)
-                    console.log(new Uint8Array(encrypted));
+                print(signature)
+                socket.emit("reply_to_challenge", signature)
             })
 
         })

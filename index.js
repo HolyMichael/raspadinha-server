@@ -216,7 +216,8 @@ io.on('connection', function (socket) {
 
 		crypto_server.randomBytes(256, (err, buf) => {
 			if (err) throw err;
-			nonce = buf.toString('base64')
+			
+			nonce = buf.toString("utf-8")
 			console.log(`${buf.length} bytes of random data: ${buf.toString('base64')}`);
 
 			mongo.connect(url, { useNewUrlParser: true }, (err, client) => {
@@ -232,56 +233,51 @@ io.on('connection', function (socket) {
 				collection.find({ name: username }).toArray(function (err, result) {
 					if (err) throw err;
 
-					client_publicKey = result[0].client_pubKey.n
-					print(client_publicKey)
+					client_publicKey = key_print(result[0].client_pubKey)
 
 					socket.emit("receive_server_challenge", nonce)
 				})
 			})
 			//a nonce deve ser cifrada antes de ser enviada
 
+			socket.on("reply_to_challenge", (signature) => {
+				print("oh hi mark")
 
+				jason_fake = JSON.parse(client_publicKey)
+				jason_fake.alg = "PS256"
+				jason_fake.key_ops = "verify"
 
+				let enc = new TextEncoder();
 
-			socket.on("reply_to_challenge", (data) => {
-				print("hi mark")
-				let jason_key = {   //this is an example jwk key, other key types are Uint8Array objects
-					kty: "RSA",
-					e: "AQAB",
-					n: client_publicKey,
-					alg: "RSA-OAEP-256",
-					ext: true,
-				}
+				print(jason_fake)
+
 				crypto.subtle.importKey(
 					"jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
-					jason_key,
+					JSON.parse(client_publicKey),
 					{   //these are the algorithm options
-						name: "RSA-OAEP",
+						name: "RSA-PSS",
 						hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
 					},
 					true, //whether the key is extractable (i.e. can be used in exportKey)
-					["decrypt"] //"encrypt" or "wrapKey" for public key import or
+					["verify"] //"encrypt" or "wrapKey" for public key import or
 					//"decrypt" or "unwrapKey" for private key imports
 				).then(function (publicKey) {
 
-					crypto.subtle.decrypt(
+					crypto.subtle.verify(
 						{
-							name: "RSA-OAEP",
+							name: "RSA-PSS",
+							saltLength: 64,
 							//label: Uint8Array([...]) //optional
 						},
 						publicKey, //from generateKey or importKey above
-						data //ArrayBuffer of the data
-					)
-						.then(function (decrypted) {
-							//returns an ArrayBuffer containing the decrypted data
-							print(decrypted)
-						})
+						signature, //ArrayBuffer of the signature
+						enc.encode(nonce) //ArrayBuffer of the data
+					).then(function (result) {
+						//returns an ArrayBuffer containing the decrypted data
+						print(result)
+					})
 
 				})
-
-
-
-
 
 			})
 
