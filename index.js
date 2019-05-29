@@ -293,7 +293,117 @@ io.on('connection', function (socket) {
 	socket.on('disconnect', function () {
 		console.log('user disconnected')
 	})
+	socket.on("raspServer", function (data) {
+	
+		function randomInt(low, high) {
+			return Math.floor(Math.random() * (high - low) + low)
+		  }
+			var crypto = require('crypto');
+			var input1 = "Perdeu!";
+			var input2 = "Ganhou!";
+		  
+		  
+			var g = 9;
+			var n = 1001;
+			var a = randomInt(5, 10);
+			var b = randomInt(10, 15);
+		  
+		  
+			server = (g * a) % n;
+		  
+			//console.log('O valor de g é: ', g);
+			//console.log('O valor de n é: ', n);
+			//console.log('O valor de a é: ', a);
+			//console.log('O valor de b é: ', b);
+			//console.log('O valor de server é: ', server);
+		  
+			/*
+			if(process.argv.length > 1){
+			 
+			  c = Number(process.argv[2]);
+			}
+			*/
+		  
+			//console.log('Calculos do cliente \n');
+		  
+		  
+		  
+		  
+			if (data == 0) {
+			  client = (g * b) % n;
+			} else {
+			  client = server * ((g * b) % n);
+			}
+		  
+			var num1 = (client * a) % n;
+			var num2 = ((client / server) * a) % n;
+		  
+			//console.log('Calculos do servidor \n');
+		  
+			var key1 = crypto.createHash('sha256').update(num1.toString()).digest('hex');
+			var key2 = crypto.createHash('sha256').update(num2.toString()).digest('hex');
+		  
+			//console.log('O valor da hash da  chave1 é: ', key1);
+			//console.log('O valor da hash da chave2 é: ', key2);
+		  
+			var cipher1 = crypto.createCipher("aes-256-ecb", key1);
+			var cipher2 = crypto.createCipher("aes-256-ecb", key2);
+		  
+			var encryptedInput1 = (
+			  cipher1.update(input1, "utf8", "base64") +
+			  cipher1.final("base64")
+			);
+		  
+			var encryptedInput2 = (
+			  cipher2.update(input2, "utf8", "base64") +
+			  cipher2.final("base64")
+			);
+		  
+			//console.log('O valor de cifra da chave1 é: ', encryptedInput1);
+			//console.log('O valor de cifra da chave2 é: ', encryptedInput2);
+		  
+		  
+			//console.log('Decifra do cliente \n');
+		  
+		  
+		  
+			var num3 = (server * b) % n;
+			var key3 = crypto.createHash('sha256').update(num3.toString()).digest('hex');
+		  
+			socket.emit("chave", key3);
+			//console.log('O valor da hash da chave3 é: ', key3);
+		  
+		  
+			var decipher1 = crypto.createDecipher("aes-256-ecb", key3);
+			var decipher2 = crypto.createDecipher("aes-256-ecb", key3);
+			try {
+			  // When decrypting we're converting the Base64 input to UTF-8 output.
+			  var decryptedInput1 = (
+				decipher1.update(encryptedInput1, "base64", "utf8") +
+				decipher1.final("utf8")
+			  );
+				socket.emit("Resultado", decryptedInput1);
+		
+			  //console.log('Message1 é: ', decryptedInput1);
+			} catch (error) {
+			    // When decrypting we're converting the Base64 input to UTF-8 output.
+				var decryptedInput2 = (
+					decipher2.update(encryptedInput2, "base64", "utf8") +
+					decipher2.final("utf8")
+				  );
+			  
+				  socket.emit("Resultado", decryptedInput2);
+				 // console.log('Message2 é: ', decryptedInput2);
+			 
+			}
+		  
+	
+	
+	});
+
+	
 })
+
 
 
 
@@ -312,6 +422,10 @@ app.get('/register', (req, res) => {
 
 app.get('/login', (req, res) => {
 	res.render("login.ejs")
+})
+
+app.get('/raspadinhas', (req, res) => {
+	res.render("raspadinhas.ejs")
 })
 // app.get('/register/:pk/:user', (req,res) =>{
 // 	console.log("User:"+req.params.user)
