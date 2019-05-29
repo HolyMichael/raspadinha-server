@@ -29,11 +29,10 @@ function login() {
 
         print("receive_server_challenge: " + data)
 
-        print(localStorage.getItem("rsa_sk"))
-        client_sk = localStorage.getItem("rsa_sk")
+        print(localStorage.getItem("client_secret_key"))
+        client_sk = localStorage.getItem("client_secret_key")
 
-        jason_fake = JSON.parse(localStorage.getItem("ignore"))
-        jason_fake.d = client_sk
+        jason_fake = JSON.parse(localStorage.getItem("client_secret_key"))
         jason_fake.alg = "PS256"
         jason_fake.key_ops = "sign"
 

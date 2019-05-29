@@ -49,8 +49,7 @@ function register() {
       client_privateKey = key.privateKey      
       
       window.crypto.subtle.exportKey("jwk", key.privateKey).then(function (privkey) {
-         localStorage.setItem("ignore", key_print(privkey))
-         localStorage.setItem("rsa_sk", privkey.d)
+         localStorage.setItem("client_secret_key", key_print(privkey))
       })
       //---------------------------------- send client public key
       server_publicKey = window.crypto.subtle.exportKey("jwk", key.publicKey).then(function (pubkey) {
@@ -98,17 +97,7 @@ function register() {
                ).then(function (publicKey) {
                   print("----- client imported server public key ----- ")
                   console.log(publicKey);
-                  // localStorage.setItem('server_pubkey', (data));
-                  // console.log(key_print(keydata))
-                  window.crypto.subtle.exportKey(
-                     "jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
-                     publicKey //can be a publicKey or privateKey, as long as extractable was true
-                  )
-                     .then(function (storage_pubkey) {
-                        //returns the exported key data
-                        localStorage.setItem('server_pubkey', (storage_pubkey.n));
 
-                     })
 
                   //É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
                   let enc = new TextEncoder();

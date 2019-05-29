@@ -446,11 +446,7 @@ io.on('connection', function (socket) {
 
 			socket.emit("Resultado", decryptedInput2);
 			// console.log('Message2 é: ', decryptedInput2);
-
 		}
-
-
-
 	});
 })
 
