@@ -99,7 +99,7 @@ io.on('connection', function (socket) {
 						aes_key //extractable must be true
 						//KEYDATA CORRESPONDE A CHAVE SIMETRICA EXPORTADA
 					).then(function (exported_aes) {
-						console.log("AES key: " + exported_aes);
+						// console.log("AES key: " + exported_aes);
 						aes_server_client = aes_key
 
 						//PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO CLIENTE PARA A USAR 
@@ -115,7 +115,7 @@ io.on('connection', function (socket) {
 							//"decrypt" or "unwrapKey" for private key imports
 							//ENCRYPT THE GENERATED AES WITH THE IMPORTED PUBLIC KEY
 						).then(function (publicKey) {
-							console.log(publicKey);
+							// console.log(publicKey);
 							//É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
 							let enc = new util.TextEncoder();
 							key_to_encrypt = enc.encode(exported_aes.k)
@@ -139,7 +139,7 @@ io.on('connection', function (socket) {
 
 				//RECEIVES CLIENT CIPHERED AES KEY
 				socket.on("encrypted_client_aes_key", (cipheredKey) => {
-					console.log(cipheredKey);
+					// console.log(cipheredKey);
 					crypto.subtle.decrypt(
 						{
 							name: "RSA-OAEP",
@@ -212,15 +212,78 @@ io.on('connection', function (socket) {
 	socket.on("login", (username) => {
 		console.log(username + " TRYING TO LOG IN..")
 		var nonce
+		var client_publicKey
 
 		crypto_server.randomBytes(256, (err, buf) => {
 			if (err) throw err;
 			nonce = buf.toString('base64')
 			console.log(`${buf.length} bytes of random data: ${buf.toString('base64')}`);
 
-			socket.emit("receive_server_challenge", nonce)
+			mongo.connect(url, { useNewUrlParser: true }, (err, client) => {
+				if (err) {
+					console.error(err)
+					return
+				}
+				print("kek")
+				const db = client.db('users')
+				const collection = db.collection('users')
+
+
+				collection.find({ name: username }).toArray(function (err, result) {
+					if (err) throw err;
+
+					client_publicKey = result[0].client_pubKey.n
+					print(client_publicKey)
+
+					socket.emit("receive_server_challenge", nonce)
+				})
+			})
 			//a nonce deve ser cifrada antes de ser enviada
 
+
+
+
+			socket.on("reply_to_challenge", (data) => {
+				print("hi mark")
+				let jason_key = {   //this is an example jwk key, other key types are Uint8Array objects
+					kty: "RSA",
+					e: "AQAB",
+					n: client_publicKey,
+					alg: "RSA-OAEP-256",
+					ext: true,
+				}
+				crypto.subtle.importKey(
+					"jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
+					jason_key,
+					{   //these are the algorithm options
+						name: "RSA-OAEP",
+						hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+					},
+					true, //whether the key is extractable (i.e. can be used in exportKey)
+					["decrypt"] //"encrypt" or "wrapKey" for public key import or
+					//"decrypt" or "unwrapKey" for private key imports
+				).then(function (publicKey) {
+
+					crypto.subtle.decrypt(
+						{
+							name: "RSA-OAEP",
+							//label: Uint8Array([...]) //optional
+						},
+						publicKey, //from generateKey or importKey above
+						data //ArrayBuffer of the data
+					)
+						.then(function (decrypted) {
+							//returns an ArrayBuffer containing the decrypted data
+							print(decrypted)
+						})
+
+				})
+
+
+
+
+
+			})
 
 		});
 

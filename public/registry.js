@@ -8,7 +8,7 @@ function validate_username() {
    a.innerHTML = "Clicked!"// diz o html a ser colocado dentro desse elento
    document.body.appendChild(a);   // faz append do elemento à página
    utilizador = document.getElementById("User").value
-   
+
    socket.emit("validate_username", utilizador)
 
    socket.on("existing_check", function (data) {
@@ -46,8 +46,12 @@ function register() {
    ).then(function (key) {
       //returns a keypair object
       // console.log(key);
-      client_privateKey = key.privateKey
-      localStorage.setItem('rsa_sk', client_privateKey);
+      client_privateKey = key.privateKey      
+      
+      window.crypto.subtle.exportKey("jwk", key.privateKey).then(function (privkey) {
+         localStorage.setItem("ignore", key_print(privkey))
+         localStorage.setItem("rsa_sk", privkey.d)
+      })
       //---------------------------------- send client public key
       server_publicKey = window.crypto.subtle.exportKey("jwk", key.publicKey).then(function (pubkey) {
          //returns the exported key data
@@ -76,7 +80,7 @@ function register() {
                key //extractable must be true
                //KEYDATA CORRESPONDE A CHAVE SIMETRICA EXPORTADA
             ).then(function (keydata) {
-               localStorage.setItem('client_server_aes_key', keydata);
+               localStorage.setItem('client_server_aes_key', keydata.k);
                print("----- client exported simmetric key ----- ")
                console.log(keydata);
                //PRIMEIRO TENHO QUE IMPORTAR A CHAVE PUBLICA DO SERVIDOR PARA A USAR 
@@ -94,7 +98,17 @@ function register() {
                ).then(function (publicKey) {
                   print("----- client imported server public key ----- ")
                   console.log(publicKey);
-                  console.log(key_print(keydata))
+                  // localStorage.setItem('server_pubkey', (data));
+                  // console.log(key_print(keydata))
+                  window.crypto.subtle.exportKey(
+                     "jwk", //can be "jwk" (public or private), "spki" (public only), or "pkcs8" (private only)
+                     publicKey //can be a publicKey or privateKey, as long as extractable was true
+                  )
+                     .then(function (storage_pubkey) {
+                        //returns the exported key data
+                        localStorage.setItem('server_pubkey', (storage_pubkey.n));
+
+                     })
 
                   //É PRECISO FAZER ENCODE DA CHAVE SIMETRICA QUE FOI GERADA
                   let enc = new TextEncoder();
@@ -176,7 +190,7 @@ function register() {
                      // let dec = new TextEncoder();
                      // enc_temp_key = dec.encode(imported_aes_key)
 
-                     localStorage.setItem('server_client_aes_key', exported_received_key);
+                     localStorage.setItem('server_client_aes_key', exported_received_key.k);
                   })
                   // print(imported_aes_key)
                })

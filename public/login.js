@@ -26,43 +26,51 @@ function login() {
     socket.emit("login", utilizador)
 
     socket.on("receive_server_challenge", (data) => {
-        print(data)
 
-        key1 = localStorage.getItem("server_client_aes_key")
+        print("receive_server_challenge: " + data)
 
-        let enc = new TextEncoder();
-        key_to_encrypt = enc.encode(key1)
+        print(localStorage.getItem("rsa_sk"))
+        client_sk = localStorage.getItem("rsa_sk")
+
+        jason_fake = JSON.parse(localStorage.getItem("ignore"))
+        jason_fake.alg = "PS256"
+        jason_fake.key_ops = "sign"
 
         window.crypto.subtle.importKey(
             "jwk", //can be "jwk" or "raw"
-            key1,
-            {   //this is the algorithm options
-                name: "AES-CTR",
-                hash: { name: "SHA-256" },
+            jason_fake,
+            {   //these are the algorithm options
+                name: "RSA-PSS",
+                hash: { name: "SHA-256" }, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
             },
-            true, //whether the key is extractable (i.e. can be used in exportKey)
-            ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+            true,
+            ["sign"]
         ).then(function (key) {
             //returns the symmetric key
             console.log(key);
-            window.crypto.subtle.encrypt(
+
+            let enc = new TextEncoder();
+            data_to_encrypt = enc.encode(data)
+
+            window.crypto.subtle.sign(
                 {
-                    name: "AES-CTR",
-                    //Don't re-use counters!
-                    //Always use a new counter every time your encrypt!
-                    counter: new Uint8Array(16),
-                    length: 128, //can be 1-128
+                    name: "RSA-PSS",
+                    saltLength: 64,
+                    //label: Uint8Array([...]) //optional
                 },
                 key, //from generateKey or importKey above
-                data //ArrayBuffer
-            )
-        }).then(function (encrypted) {
-            //returns an ArrayBuffer containing the encrypted data
-            console.log(new Uint8Array(encrypted));
+                new Uint8Array(data) //ArrayBuffer
+            ).then(function (encrypted) {
+                //returns an ArrayBuffer containing the encrypted data
+
+                // socket.emit("reply_to_challenge", encrypted)
+                    print(data + "zzz" + encrypted)
+                    console.log(new Uint8Array(encrypted));
+            })
+
         })
 
     })
-
 }
 
 
