@@ -293,7 +293,7 @@ io.on('connection', function (socket) {
 									jason_fake.alg = "PS256"
 									jason_fake.key_ops = "verify"
 
-									let enc = new TextEncoder();
+									let enc = new util.TextEncoder();
 
 									print(jason_fake)
 
