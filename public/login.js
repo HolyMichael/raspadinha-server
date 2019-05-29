@@ -64,10 +64,61 @@ function login() {
             ).then(function (signature) {
                 //returns an ArrayBuffer containing the encrypted data
                 print(signature)
-                socket.emit("reply_to_challenge", signature)
+
+
+                let json_key = {
+                    alg: "A256CTR",
+                    ext: true,
+                    k: localStorage.getItem("client_server_aes_key"),
+                    key_ops: ["encrypt", "decrypt"],
+                    kty: "oct"
+                }
+
+                window.crypto.subtle.importKey(
+                    "jwk", //can be "jwk" or "raw"
+                    json_key,
+                    {   //this is the algorithm options
+                        name: "AES-CTR",
+                    },
+                    true, //whether the key is extractable (i.e. can be used in exportKey)
+                    ["encrypt", "decrypt"] //can "encrypt", "decrypt", "wrapKey", or "unwrapKey"
+                )
+                    .then(function (key) {
+                        window.crypto.subtle.encrypt(
+                            {
+                                name: "AES-CTR",
+                                //Don't re-use counters!
+                                //Always use a new counter every time your encrypt!
+                                counter: new Uint8Array(16),
+                                length: 128, //can be 1-128
+                            },
+                            key, //from generateKey or importKey above
+                            signature //ArrayBuffer of data you want to encrypt
+                        )
+                            .then(function (encrypted_signature) {
+                                socket.emit("reply_to_challenge", encrypted_signature)
+                            })
+
+                    })
+
+
             })
 
         })
+
+    })
+
+    socket.on("validation_result", (result) =>{
+        if(result == true){
+            print("authentication successfull")
+            location.replace("/raspadinhas")
+
+        }
+
+        if (result == false){
+            alert("ERROR SIGNING IN")
+            location.reload()
+        }
 
     })
 }

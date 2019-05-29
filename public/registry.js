@@ -199,6 +199,11 @@ function register() {
          });
       })
 
+
+
+      socket.on("registry_done", (data) =>{
+         location.replace("/")
+      })
    })
 };
 
