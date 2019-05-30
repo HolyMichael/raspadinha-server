@@ -20,7 +20,7 @@ function raspClient(c) {
   socket.emit("raspServer", c);
   console.log('O valor de c antes da normalização é: ', c);
   socket.on("chave", function (data) {
-
+    console.log(data);
   });
 
   socket.on("Resultado", function (data) {
