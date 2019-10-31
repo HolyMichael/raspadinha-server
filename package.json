@@ -19,7 +19,7 @@
     "joi": "^14.3.1",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.2.6",
-    "mongoose": "^5.5.11",
+    "mongoose": "^5.7.5",
     "namenode": "0.0.1",
     "socket.io": "^2.2.0",
     "webcrypto": "^0.1.1"
